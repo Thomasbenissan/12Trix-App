@@ -1,1 +1,1 @@
-# 12Trix-App
+# 12Trix
