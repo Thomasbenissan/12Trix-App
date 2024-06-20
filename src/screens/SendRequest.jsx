@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { HomeHeader } from "../components/Headers";
 import { BottomTabs } from "../components/BottomTabs";
 import PinkPlateMenu from "./PinkPlateMenu";
-import { database, db } from "../components/firebase";
+import { auth, database, db } from "../components/firebase";
 import {
   doc,
   setDoc,
@@ -41,59 +41,81 @@ const SendRequest = ({ navigation }) => {
   const [selectedImage, setSelectedImage] = useState([]);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [deleteImage, setDeleteImage] = useState(null);
-
+  const [friendData, setFriendData] = useState(null);
   const operationRef = useRef(operation);
+  const iconList = {
+    1: { source: require("../../assets/addfriend/banana.png") },
+    2: { source: require("../../assets/addfriend/ananas.png") },
+    3: { source: require("../../assets/addfriend/house.png") },
+    4: { source: require("../../assets/addfriend/apple.png") },
+    5: { source: require("../../assets/addfriend/horse.png") },
+    6: { source: require("../../assets/addfriend/bear.png") },
+    7: { source: require("../../assets/addfriend/fish.png") },
+    8: { source: require("../../assets/addfriend/strawberry.png") },
+    9: { source: require("../../assets/addfriend/duck.png") },
+    10: { source: require("../../assets/addfriend/bamboo.png") },
+  };
 
-  const iconList = [
+  const images = [
     {
       id: 1,
-      source: require("../../assets/addfriend/banana.png"),
       label: "Banana",
+      source: require("../../assets/boxBanana.png"),
+      selectedSource: require("../../assets/addfriend/banana.png"),
     },
     {
       id: 2,
-      source: require("../../assets/addfriend/ananas.png"),
       label: "Ananas",
+      source: require("../../assets/ananasBox.png"),
+      selectedSource: require("../../assets/addfriend/ananas.png"),
     },
     {
       id: 3,
-      source: require("../../assets/addfriend/house.png"),
       label: "House",
+      source: require("../../assets/homeBox.png"),
+      selectedSource: require("../../assets/addfriend/house.png"),
     },
     {
       id: 4,
-      source: require("../../assets/addfriend/apple.png"),
       label: "Apple",
+      source: require("../../assets/appleBox.png"),
+      selectedSource: require("../../assets/addfriend/apple.png"),
     },
     {
       id: 5,
-      source: require("../../assets/addfriend/horse.png"),
-      label: "horse",
+      label: "Horse",
+      source: require("../../assets/hourseBox.png"),
+      selectedSource: require("../../assets/addfriend/horse.png"),
     },
     {
       id: 6,
-      source: require("../../assets/addfriend/bear.png"),
       label: "Apple",
+      source: require("../../assets/bearBox.png"),
+      selectedSource: require("../../assets/addfriend/bear.png"),
     },
     {
       id: 7,
-      source: require("../../assets/addfriend/fish.png"),
       label: "Fish",
+      source: require("../../assets/fishbox.png"),
+      selectedSource: require("../../assets/addfriend/fish.png"),
     },
     {
       id: 8,
-      source: require("../../assets/addfriend/strawberry.png"),
       label: "Strawberry",
+      source: require("../../assets/strawberryBox.png"),
+      selectedSource: require("../../assets/addfriend/strawberry.png"),
     },
     {
       id: 9,
-      source: require("../../assets/addfriend/duck.png"),
       label: "Duck",
+      source: require("../../assets/duckBox.png"),
+      selectedSource: require("../../assets/addfriend/duck.png"),
     },
     {
       id: 10,
-      source: require("../../assets/addfriend/bamboo.png"),
       label: "Bamboo",
+      source: require("../../assets/bamboBox.png"),
+      selectedSource: require("../../assets/addfriend/bamboo.png"),
     },
   ];
 
@@ -199,12 +221,15 @@ const SendRequest = ({ navigation }) => {
       const querySnapshot = await getDocs(userQuery);
       if (querySnapshot.empty) {
         setIsButtonEnabled(false);
+        setFriendData(null);
         console.log("No matching documents.");
       } else {
         setIsButtonEnabled(friendName !== "");
         const userDoc = querySnapshot.docs[0];
         const user = { ...userDoc.data(), id: userDoc.id };
         console.log("--------------", user, "--------------");
+        setFriendData(user);
+
         return user;
       }
     } catch (error) {
@@ -221,17 +246,83 @@ const SendRequest = ({ navigation }) => {
     setFriendName(text);
   };
 
-  const handleImagePress = (image) => {
-    if (!selectedImage.includes(image)) {
-      setSelectedImage((prevSelectedImages) => [...prevSelectedImages, image]);
+  const handleImagePress = (item) => {
+    if (!selectedImage.find((selectedItem) => selectedItem.id === item.id)) {
+      setSelectedImage((prevSelectedImages) => [...prevSelectedImages, item]);
     }
   };
 
+  // const handleImagePress = (image) => {
+  //   console.log(selectedImage, image.id);
+  //   if (!selectedImage.includes(image?.id)) {
+  //     setSelectedImage((prevSelectedImages) => [...prevSelectedImages, image]);
+  //   }
+  //   return;
+  //   if (!selectedImage.includes(image)) {
+  //     setSelectedImage((prevSelectedImages) => [...prevSelectedImages, image]);
+  //   }
+  // };
+
   const handleImageRemove = () => {
-    setSelectedImage((prevSelectedImages) =>
-      prevSelectedImages.filter((img) => img !== deleteImage)
-    );
+    console.log(deleteImage);
+    if (deleteImage == null) {
+      setSelectedImage((prevSelectedImages) => prevSelectedImages.slice(0, -1));
+    } else {
+      setSelectedImage((prevSelectedImages) =>
+        prevSelectedImages.filter((img) => img !== deleteImage)
+      );
+    }
+    setDeleteImage(null);
+
+    // setSelectedImage((prevSelectedImages) =>
+    //   prevSelectedImages.filter((img) => img !== deleteImage)
+    // );
   };
+
+  const handleSave = async () => {
+    const docRef = doc(db, "Usernames", auth?.currentUser?.uid);
+    const docSnap = await getDoc(docRef);
+
+    const friendInfo = {
+      ...friendData,
+      iconList: selectedImage,
+    };
+
+    const myInfo = {
+      ...docSnap?.data(),
+      iconList: selectedImage,
+    };
+    try {
+      set(
+        ref(
+          database,
+          "chatRoom/" + auth?.currentUser?.uid + "/" + friendData?.user_uid
+        ),
+        friendInfo
+      );
+      set(
+        ref(
+          database,
+          "chatRoom/" + friendData?.user_uid + "/" + auth?.currentUser?.uid
+        ),
+        myInfo
+      );
+
+      setSelectedImage([]);
+      setFriendName("");
+
+      navigation.push("FriendList", { animation: "leftToRight" });
+    } catch (error) {
+      console.log(error);
+    }
+    // return;
+  };
+
+  const ImageButton = ({ item, onPress }) => (
+    <TouchableOpacity onPress={() => onPress(item)}>
+      <Image source={item.source} style={styles.innerIcon} />
+    </TouchableOpacity>
+  );
 
   return (
     <LinearGradient colors={["#011E57", "#001744"]} style={styles.container}>
@@ -283,9 +374,10 @@ const SendRequest = ({ navigation }) => {
                         setDeleteImage(item);
                       }
                     }}
+                    key={item?.id}
                   >
                     <Image
-                      source={iconList[item]?.source}
+                      source={iconList[item?.id]?.source}
                       style={{ height: 20, width: 20 }}
                       resizeMode="contain"
                     />
@@ -300,32 +392,68 @@ const SendRequest = ({ navigation }) => {
               onSelectionChange={handleSelectionChange}
             /> */}
           </View>
+
           <View style={styles.flexWrap}>
-            <TouchableOpacity onPress={() => handleImagePress(0)}>
+            {images?.map((item) => (
+              <ImageButton
+                key={item.id}
+                item={item}
+                onPress={handleImagePress}
+              />
+            ))}
+          </View>
+
+          {/* <View style={styles.flexWrap}>
+            <TouchableOpacity
+              onPress={() => handleImagePress({ id: 1, label: "Banana" })}
+            >
               <Image
                 source={require("../../assets/boxBanana.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(1)}>
+            <TouchableOpacity
+              onPress={() => handleImagePress({ id: 2, label: "Ananas" })}
+            >
               <Image
                 source={require("../../assets/ananasBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(2)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 3,
+                  label: "House",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/homeBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(3)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 4,
+                  label: "Apple",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/appleBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(4)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 5,
+                  label: "horse",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/hourseBox.png")}
                 style={styles.innerIcon}
@@ -333,38 +461,74 @@ const SendRequest = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           <View style={styles.flexWrapBottom}>
-            <TouchableOpacity onPress={() => handleImagePress(5)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 6,
+                  label: "Apple",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/bearBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(6)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 7,
+                  source: require("../../assets/addfriend/fish.png"),
+                  label: "Fish",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/fishbox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(7)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 8,
+                  label: "Strawberry",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/strawberryBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleImagePress(8)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 9,
+                  label: "Duck",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/duckBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => handleImagePress(9)}>
+            <TouchableOpacity
+              onPress={() =>
+                handleImagePress({
+                  id: 10,
+                  label: "Bamboo",
+                })
+              }
+            >
               <Image
                 source={require("../../assets/bamboBox.png")}
                 style={styles.innerIcon}
               />
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           <View style={[styles.flexDirecionFriendName]}>
             <Text style={styles.newFriendText}>Friend Name: </Text>
@@ -380,6 +544,7 @@ const SendRequest = ({ navigation }) => {
           <TouchableOpacity
             style={styles.shareBtnWrap}
             disabled={!isButtonEnabled}
+            onPress={handleSave}
           >
             <LinearGradient
               colors={
@@ -612,6 +777,7 @@ const styles = StyleSheet.create({
     width: 50,
     resizeMode: "contain",
     marginRight: 3,
+    marginBottom: 10,
   },
 
   backBtn: {
@@ -656,6 +822,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 15,
+    flexWrap: "wrap",
   },
   flexWrapBottom: {
     flexDirection: "row",

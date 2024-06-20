@@ -41,6 +41,7 @@ const UserSignupScreen = ({ navigation }) => {
         nickname: username,
         email: email,
         password: password,
+        user_uid: registerDetail?.user?.uid,
       });
 
       navigation.replace("UserSignIn");

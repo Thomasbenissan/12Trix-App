@@ -15,6 +15,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { HomeHeader } from "../components/Headers";
 import { BottomTabs } from "../components/BottomTabs";
 import PinkPlateMenu from "./PinkPlateMenu";
+import { auth, database, db } from "../components/firebase";
+import { get, push, ref } from "firebase/database";
+import { doc } from "firebase/firestore";
 
 const FriendListScreen = ({ navigation }) => {
   const [isConstruct, setIsConstruct] = useState(false);
@@ -23,6 +26,8 @@ const FriendListScreen = ({ navigation }) => {
   const nextTranslation = useRef(new Animated.Value(0)).current;
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const [selectedFriend, setSelectedFriend] = useState([]);
+  const [friendList, setFriendList] = useState([]);
+  const [isShare, setIsShare] = useState(false);
 
   const operationRef = useRef(operation);
 
@@ -34,25 +39,58 @@ const FriendListScreen = ({ navigation }) => {
     }
   };
 
-  const friendList = [
-    { id: "1", name: "John" },
-    { id: "2", name: "Jane" },
-    { id: "3", name: "Michael" },
-    { id: "4", name: "Maya" },
-    { id: "5", name: "Albert" },
-    { id: "6", name: "Hana" },
-    { id: "7", name: "William" },
-    { id: "8", name: "Yana" },
-    { id: "9", name: "Joseph" },
-    { id: "10", name: " Johnson" },
-  ];
+  const iconList = {
+    1: { source: require("../../assets/addfriend/banana.png") },
+    2: { source: require("../../assets/addfriend/ananas.png") },
+    3: { source: require("../../assets/addfriend/house.png") },
+    4: { source: require("../../assets/addfriend/apple.png") },
+    5: { source: require("../../assets/addfriend/horse.png") },
+    6: { source: require("../../assets/addfriend/bear.png") },
+    7: { source: require("../../assets/addfriend/fish.png") },
+    8: { source: require("../../assets/addfriend/strawberry.png") },
+    9: { source: require("../../assets/addfriend/duck.png") },
+    10: { source: require("../../assets/addfriend/bamboo.png") },
+  };
 
   useEffect(() => {
-    operationRef.current = operation;
-    console.log(operation);
-  }, [operation]);
+    const fetchUsers = async () => {
+      try {
+        const usersRef = ref(database, "chatRoom/" + auth?.currentUser?.uid);
+
+        get(usersRef)
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              const usersData = snapshot.val();
+              console.log(Object.values(usersData));
+              const usersList = Object.keys(usersData).map((userId) => ({
+                uid: userId,
+                ...usersData[userId],
+              }));
+              setFriendList(usersList);
+            } else {
+              console.log("No users available");
+              setFriendList([]); // Set empty array if no users
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching users: ", error);
+          });
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchUsers();
+
+    // Clean up function for unmounting or dependencies change
+    return () => {
+      // Clean up any resources if needed
+    };
+  }, []);
 
   const onTranslate = () => {
+    handleShare();
+    setIsShare(true);
     Animated.timing(translation, {
       toValue: 100,
       duration: 400,
@@ -60,18 +98,29 @@ const FriendListScreen = ({ navigation }) => {
     }).start();
   };
 
-  const onNextTranslate = () => {
-    setIsConstruct(true);
-    Animated.timing(translation, {
-      toValue: 100,
-      duration: 400,
-      useNativeDriver: true,
-    }).start(() => {
-      console.log("Operation before navigation:", operationRef.current);
-      navigation.push("Problem", { operation: operationRef.current });
-    });
+  const handleShare = async () => {
+    try {
+      selectedFriend.forEach((item) => {
+        push(
+          ref(
+            database,
+            "chatRoom/" + auth?.currentUser?.uid + "/" + item + "/messages"
+          ),
+          { aa: "Message" }
+        );
+        push(
+          ref(
+            database,
+            "chatRoom/" + item + "/" + auth?.currentUser?.uid + "/messages"
+          ),
+          { aa: "Message" }
+        );
+      });
+    } catch (error) {
+      console.log(error);
+    }
+    // return;
   };
-
   return (
     <LinearGradient colors={["#011E57", "#001744"]} style={styles.container}>
       <View style={styles.bgRobot}>
@@ -96,44 +145,71 @@ const FriendListScreen = ({ navigation }) => {
             // width: "100%",
           }}
         >
-          <Text style={styles.plateTitle}>Share with a friend</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("SendRequest")}>
-            <LinearGradient
-              colors={["#92d3ef", "#3ca5d6", "#40a9db", "#40a9db"]}
-              locations={[0, 0.297, 0.523, 1]}
-              style={{ ...styles.startBtn, marginBottom: 10 }}
-            >
-              <Text style={styles.newFriendText}>+ Add a new friend</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={friendList}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => {
-                const isSelected = selectedFriend.includes(item.id);
-                return (
-                  <TouchableOpacity onPress={() => toggleSelectUser(item.id)}>
-                    <LinearGradient
-                      colors={
-                        isSelected
-                          ? ["#88c078", "#4c9638", "#5faf48", "#88c078"]
-                          : ["#F0A277", "#E68958", "#E15E19", "#E15E19"]
-                      }
-                      locations={[0, 0.297, 0.523, 1]}
-                      style={styles.listUserBtn}
-                    >
-                      <Image
-                        source={
-                          isSelected
-                            ? require("../../assets/greenSquare.png")
-                            : require("../../assets/square.png")
-                        }
-                        style={styles.innerIcon}
-                      />
-                      {/* <View style={styles.boxBtn} /> */}
-                      <Text style={styles.friendListText}>{item?.name}</Text>
-                      <Image
+          {!isShare && (
+            <>
+              <Text style={styles.plateTitle}>Share with a friend</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("SendRequest")}
+              >
+                <LinearGradient
+                  colors={["#92d3ef", "#3ca5d6", "#40a9db", "#40a9db"]}
+                  locations={[0, 0.297, 0.523, 1]}
+                  style={{ ...styles.startBtn, marginBottom: 10 }}
+                >
+                  <Text style={styles.newFriendText}>+ Add a new friend</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              {friendList.length > 0 ? (
+                <View style={{ flex: 1 }}>
+                  <FlatList
+                    data={friendList}
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item }) => {
+                      const isSelected = selectedFriend.includes(item.id);
+                      return (
+                        <TouchableOpacity
+                          onLongPress={() => toggleSelectUser(item.id)}
+                        >
+                          <LinearGradient
+                            colors={
+                              isSelected
+                                ? ["#88c078", "#4c9638", "#5faf48", "#88c078"]
+                                : ["#F0A277", "#E68958", "#E15E19", "#E15E19"]
+                            }
+                            locations={[0, 0.297, 0.523, 1]}
+                            style={styles.listUserBtn}
+                          >
+                            <TouchableOpacity
+                              onPress={() => toggleSelectUser(item.id)}
+                            >
+                              <Image
+                                source={
+                                  isSelected
+                                    ? require("../../assets/greenSquare.png")
+                                    : require("../../assets/square.png")
+                                }
+                                style={styles.innerIcon}
+                              />
+                            </TouchableOpacity>
+                            {/* <View style={styles.boxBtn} /> */}
+                            <Text style={styles.friendListText}>
+                              {item?.nickname.split("_")[0]}
+                            </Text>
+
+                            {item?.iconList != undefined &&
+                              item?.iconList
+                                ?.slice(0, 5)
+                                ?.map((item, index) => {
+                                  return (
+                                    <Image
+                                      source={iconList[item?.id]?.source}
+                                      style={styles.innerIcon}
+                                      resizeMode="contain"
+                                    />
+                                  );
+                                })}
+
+                            {/* <Image
                         source={require("../../assets/banana.png")}
                         style={styles.innerIcon}
                       />
@@ -152,27 +228,60 @@ const FriendListScreen = ({ navigation }) => {
                       <Image
                         source={require("../../assets/ananas.png")}
                         style={styles.innerIcon}
-                      />
-                    </LinearGradient>
-                  </TouchableOpacity>
-                );
-              }}
-              keyExtractor={(item) => item.id}
-            />
-          </View>
-          <TouchableOpacity style={styles.shareBtnWrap}>
-            <LinearGradient
-              //   colors={["#cecdcd", "#a7a6a6", "#a5a4a4", "#a8a6a6"]}
-              colors={["#fedaec", "#fb61ae", "#e74194", "#fb61ae"]}
-              locations={[0, 0.297, 0.523, 1]}
-              style={styles.shareBtn}
-            >
-              <Text style={styles.startBtnText}>Share</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+                      /> */}
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      );
+                    }}
+                    keyExtractor={(item) => item.id}
+                  />
+                </View>
+              ) : (
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.plateTitle}>No friends available</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.shareBtnWrap}
+                onPress={onTranslate}
+              >
+                <LinearGradient
+                  //   colors={["#cecdcd", "#a7a6a6", "#a5a4a4", "#a8a6a6"]}
+                  colors={["#fedaec", "#fb61ae", "#e74194", "#fb61ae"]}
+                  locations={[0, 0.297, 0.523, 1]}
+                  style={styles.shareBtn}
+                >
+                  <Text style={styles.startBtnText}>Share</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </>
+          )}
         </ImageBackground>
       </View>
-
+      {isShare && (
+        <Animated.View
+          style={[
+            styles.plate,
+            {
+              opacity: translation.interpolate({
+                inputRange: [0, 100],
+                outputRange: [0, 1],
+              }),
+              transform: [
+                { translateX: -146 },
+                {
+                  translateY: translation.interpolate({
+                    inputRange: [0, 2],
+                    outputRange: [0, 3],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.plateText}>Problem Shared Successfully</Text>
+        </Animated.View>
+      )}
       <View
         style={{
           position: "absolute",
@@ -227,7 +336,7 @@ const styles = StyleSheet.create({
     // alignItems: "center",
     alignSelf: "center",
     left: "42%",
-    zIndex: 1,
+    // zIndex: 1,
     transform: [{ translateX: -161 }],
   },
   thermostat: {
@@ -368,10 +477,12 @@ const styles = StyleSheet.create({
   },
   plateText: {
     fontFamily: "Rubik-Regular",
-    color: "#001744",
     fontSize: 24,
     lineHeight: 28,
     textAlign: "center",
+    width: "50%",
+    alignSelf: "center",
+    color: "#368d6e",
   },
   pinkPlateMenu: {
     width: 391,
