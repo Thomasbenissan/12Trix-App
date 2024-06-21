@@ -12,6 +12,7 @@ import SolutionsScreen from "../screens/SolutionsScreen";
 import UserSignupScreen from "../screens/UserSignupScreen";
 import FriendListScreen from "../screens/FriendListScreen";
 import SendRequest from "../screens/SendRequest";
+import MessageList from "../screens/MessageList";
 
 const leftToRightAnimation = {
   cardStyleInterpolator: ({ current, layouts }) => {
@@ -48,6 +49,7 @@ export const MainNavigator = () => {
         <Stack.Screen name="UserSignIn" component={UserSignInScreen} />
         <Stack.Screen name="FriendList" component={FriendListScreen} />
         <Stack.Screen name="SendRequest" component={SendRequest} />
+        <Stack.Screen name="MessageList" component={MessageList} />
 
         <Stack.Screen
           name="Home"

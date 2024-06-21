@@ -20,9 +20,18 @@ import OrangePlateMenu from "./OrangePlateMenu";
 import YellowPlateMenu from "./YellowPlateMenu";
 import BluePlateMenu from "./BluePlateMenu";
 import GreenPlateMenu from "./GreenPlateMenu";
+import { useDispatch } from "react-redux";
+import {
+  PlateFiveAction,
+  PlateFourAction,
+  PlateOneAction,
+  PlateThreeAction,
+  PlateTwoAction,
+} from "../redux/actions";
 
 const ProblemScreen = ({ navigation, route }) => {
   const { operation } = route.params;
+  const dispatch = useDispatch();
 
   useEffect(() => {
     console.log("Operation updated:", operation);
@@ -47,7 +56,6 @@ const ProblemScreen = ({ navigation, route }) => {
   const [plateThree, setPlateThree] = useState("");
   const [plateFour, setPlateFour] = useState("");
   const [plateFive, setPlateFive] = useState("");
-
   const timeoutId = useRef(null);
   const [isResultChecked, setIsResultChecked] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(false);
@@ -254,6 +262,7 @@ const ProblemScreen = ({ navigation, route }) => {
             style={styles.plateMenu}
             onItemPress={(val) => {
               setPlateOne(val);
+              dispatch(PlateOneAction(val));
               toggleMenuTranslation("pink", 0);
             }}
           />
@@ -264,6 +273,8 @@ const ProblemScreen = ({ navigation, route }) => {
             style={styles.plateMenu}
             onItemPress={(val) => {
               setPlateTwo(val);
+              dispatch(PlateTwoAction(val));
+
               toggleMenuTranslation("orange", 0);
               setNum1(val);
               console.log(val);
@@ -276,6 +287,7 @@ const ProblemScreen = ({ navigation, route }) => {
             style={styles.plateMenu}
             onItemPress={(val) => {
               setPlateThree(val);
+              dispatch(PlateThreeAction(val));
               toggleMenuTranslation("yellow", 0);
             }}
           />
@@ -286,6 +298,8 @@ const ProblemScreen = ({ navigation, route }) => {
             style={styles.plateMenu}
             onItemPress={(val) => {
               setPlateFour(val);
+              dispatch(PlateFourAction(val));
+
               toggleMenuTranslation("blue", 0);
             }}
             operation={operation}
@@ -297,6 +311,7 @@ const ProblemScreen = ({ navigation, route }) => {
             style={styles.plateMenu}
             onItemPress={(val) => {
               setPlateFive(val);
+              dispatch(PlateFiveAction(val));
               toggleMenuTranslation("green", 0);
               setNum2(val);
               console.log(val);

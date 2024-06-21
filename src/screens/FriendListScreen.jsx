@@ -18,8 +18,12 @@ import PinkPlateMenu from "./PinkPlateMenu";
 import { auth, database, db } from "../components/firebase";
 import { get, push, ref } from "firebase/database";
 import { doc } from "firebase/firestore";
+import { useSelector } from "react-redux";
 
 const FriendListScreen = ({ navigation }) => {
+  const { plateOne, plateTwo, plateThree, plateFour, plateFive } = useSelector(
+    (state) => state.userReducer
+  );
   const [isConstruct, setIsConstruct] = useState(false);
   const [operation, setOperation] = useState("");
   const translation = useRef(new Animated.Value(0)).current;
@@ -99,6 +103,13 @@ const FriendListScreen = ({ navigation }) => {
   };
 
   const handleShare = async () => {
+    const MessageData = {
+      plateOne,
+      plateTwo,
+      plateThree,
+      plateFour,
+      plateFive,
+    };
     try {
       selectedFriend.forEach((item) => {
         push(
@@ -106,14 +117,14 @@ const FriendListScreen = ({ navigation }) => {
             database,
             "chatRoom/" + auth?.currentUser?.uid + "/" + item + "/messages"
           ),
-          { aa: "Message" }
+          MessageData
         );
         push(
           ref(
             database,
             "chatRoom/" + item + "/" + auth?.currentUser?.uid + "/messages"
           ),
-          { aa: "Message" }
+          MessageData
         );
       });
     } catch (error) {
@@ -168,7 +179,13 @@ const FriendListScreen = ({ navigation }) => {
                       const isSelected = selectedFriend.includes(item.id);
                       return (
                         <TouchableOpacity
-                          onLongPress={() => toggleSelectUser(item.id)}
+                          // onLongPress={() => toggleSelectUser(item.id)}
+                          onPress={() =>
+                            navigation.push("MessageList", {
+                              animation: "leftToRight",
+                              items: item,
+                            })
+                          }
                         >
                           <LinearGradient
                             colors={
