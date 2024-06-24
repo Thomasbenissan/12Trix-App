@@ -310,7 +310,7 @@ const SendRequest = ({ navigation }) => {
 
       setSelectedImage([]);
       setFriendName("");
-
+      setIsButtonEnabled(false);
       navigation.push("FriendList", { animation: "leftToRight" });
     } catch (error) {
       console.log(error);

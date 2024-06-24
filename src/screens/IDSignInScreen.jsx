@@ -45,6 +45,10 @@ const IDSignInScreen = ({ navigation }) => {
   const saveNickname = async () => {
     const fullNickname = `${nickname}_${selectedIcon}`;
 
+    setUsername(fullNickname); // Set the username in context
+
+    navigation.replace("UserSignUp");
+    return;
     try {
       const docRef = doc(db, "Usernames", fullNickname);
       const docSnap = await getDoc(docRef);

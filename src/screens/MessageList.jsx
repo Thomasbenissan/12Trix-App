@@ -11,6 +11,7 @@ import {
   ScrollView,
   TextInput,
   FlatList,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { HomeHeader } from "../components/Headers";
@@ -26,7 +27,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { get, ref, set } from "firebase/database";
+import { get, off, onValue, ref, set, update } from "firebase/database";
 import { useSelector } from "react-redux";
 
 const SendRequest = ({ navigation, route }) => {
@@ -35,8 +36,12 @@ const SendRequest = ({ navigation, route }) => {
     (state) => state.userReducer
   );
   const [operation, setOperation] = useState("");
+  const [guess, setGuess] = useState("");
+  const [messageData, setMessageData] = useState(null);
 
   const [messageList, setMessageList] = useState([]);
+  const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const imageMap = {
     Grandma: require("../../assets/grandma-icon.png"),
@@ -114,7 +119,7 @@ const SendRequest = ({ navigation, route }) => {
   };
 
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchMessages = () => {
       try {
         const usersRef = ref(
           database,
@@ -125,20 +130,21 @@ const SendRequest = ({ navigation, route }) => {
             "/messages"
         );
 
-        get(usersRef)
-          .then((snapshot) => {
+        onValue(
+          usersRef,
+          (snapshot) => {
             if (snapshot.exists()) {
               const messages = snapshot.val();
-
               setMessageList(Object.values(messages));
             } else {
               console.log("No users available");
               setMessageList([]); // Set empty array if no users
             }
-          })
-          .catch((error) => {
+          },
+          (error) => {
             console.error("Error fetching users: ", error);
-          });
+          }
+        );
       } catch (error) {
         console.log(error);
       }
@@ -148,9 +154,82 @@ const SendRequest = ({ navigation, route }) => {
 
     // Clean up function for unmounting or dependencies change
     return () => {
-      // Clean up any resources if needed
+      const usersRef = ref(
+        database,
+        "chatRoom/" +
+          auth?.currentUser?.uid +
+          "/" +
+          items?.user_uid +
+          "/messages"
+      );
+      off(usersRef);
     };
   }, []);
+
+  // useEffect(() => {
+  //   const fetchMessages = async () => {
+  //     try {
+  //       const usersRef = ref(
+  //         database,
+  //         "chatRoom/" +
+  //           auth?.currentUser?.uid +
+  //           "/" +
+  //           items?.user_uid +
+  //           "/messages"
+  //       );
+
+  //       get(usersRef)
+  //         .then((snapshot) => {
+  //           if (snapshot.exists()) {
+  //             const messages = snapshot.val();
+
+  //             setMessageList(Object.values(messages));
+  //           } else {
+  //             console.log("No users available");
+  //             setMessageList([]); // Set empty array if no users
+  //           }
+  //         })
+  //         .catch((error) => {
+  //           console.error("Error fetching users: ", error);
+  //         });
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+
+  //   fetchMessages();
+
+  //   // Clean up function for unmounting or dependencies change
+  //   return () => {
+  //     // Clean up any resources if needed
+  //   };
+  // }, []);
+
+  const handleAnswer = async (number) => {
+    try {
+      // Update the isCorrect field for the current user's path
+      await update(
+        ref(
+          database,
+          `chatRoom/${auth?.currentUser?.uid}/${items?.user_uid}/messages/${messageData?.messageId}`
+        ),
+        { isCorrect: number }
+      );
+
+      // Update the isCorrect field for the friend's path
+      await update(
+        ref(
+          database,
+          `chatRoom/${items?.user_uid}/${auth?.currentUser?.uid}/messages/${messageData?.messageId}`
+        ),
+        { isCorrect: number }
+      );
+
+      console.log("isCorrect updated successfully");
+    } catch (error) {
+      console.error("Error updating isCorrect:", error);
+    }
+  };
 
   return (
     <LinearGradient colors={["#011E57", "#001744"]} style={styles.container}>
@@ -179,7 +258,7 @@ const SendRequest = ({ navigation, route }) => {
                     }}
                   >
                     <Text style={styles.nameTxt}>
-                      From {items?.nickname.split("_")[0]}
+                      {items?.nickname?.split("_")[0]}
                     </Text>
 
                     <View style={styles.flexDirection}>
@@ -210,6 +289,72 @@ const SendRequest = ({ navigation, route }) => {
                         style={styles.imageIcon}
                       />
                     </View>
+
+                    {item?.senderId == auth?.currentUser?.uid && (
+                      <>
+                        {item?.isCorrect == "" ? (
+                          <TouchableOpacity style={styles.questionMark}>
+                            <Image
+                              source={require("../../assets/guess-btn.png")}
+                              style={{ width: 45, height: 45 }}
+                            />
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity style={styles.questionMark}>
+                            <ImageBackground
+                              source={require("../../assets/right-btn.png")}
+                              resizeMode="contain"
+                              style={{
+                                width: 42,
+                                height: 42,
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Text style={styles.numPadBtnText}>
+                                {item?.isCorrect}
+                              </Text>
+                            </ImageBackground>
+                          </TouchableOpacity>
+                        )}
+                      </>
+                    )}
+                    {item?.senderId != auth?.currentUser?.uid && (
+                      <>
+                        {item?.isCorrect == "" ? (
+                          <TouchableOpacity
+                            style={styles.questionMark}
+                            onPress={() => {
+                              setModalVisible(true);
+                              setMessageData(item);
+                              // defineCorrectAnswer();
+                            }}
+                          >
+                            <Image
+                              source={require("../../assets/guess-btn.png")}
+                              style={{ width: 45, height: 45 }}
+                            />
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity style={styles.questionMark}>
+                            <ImageBackground
+                              source={require("../../assets/right-btn.png")}
+                              resizeMode="contain"
+                              style={{
+                                width: 42,
+                                height: 42,
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Text style={styles.numPadBtnText}>
+                                {item?.isCorrect}
+                              </Text>
+                            </ImageBackground>
+                          </TouchableOpacity>
+                        )}
+                      </>
+                    )}
                   </ImageBackground>
                 );
               }}
@@ -220,6 +365,60 @@ const SendRequest = ({ navigation, route }) => {
           )}
         </View>
       </View>
+
+      <Modal animationType="slide" transparent={true} visible={modalVisible}>
+        <View style={styles.modalBg}>
+          <ImageBackground
+            source={require("../../assets/plate3.png")}
+            resizeMode="contain"
+            style={styles.numPadModalView}
+          >
+            <View
+              style={{
+                width: 360,
+                height: 320,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                alignItems: "center",
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -180 }, { translateY: -160 }],
+              }}
+            >
+              {numbers.map((number) => (
+                <TouchableOpacity
+                  key={number}
+                  style={styles.numPadBtnCont}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setGuess(number);
+                    handleAnswer(number);
+                    // if (number == correctAnswer) {
+                    //   setIsResultChecked(true);
+                    //   setIsAnswerCorrect(true);
+                    //   resultTransition();
+                    // } else {
+                    //   setGuess(number);
+                    //   setIsResultChecked(true);
+                    //   setIsAnswerCorrect(false);
+                    //   resultTransition();
+                    // }
+                  }}
+                >
+                  <ImageBackground
+                    source={require("../../assets/blue-btn.png")}
+                    resizeMode="contain"
+                    style={styles.numPadBtn}
+                  >
+                    <Text style={styles.numPadBtnText}>{number}</Text>
+                  </ImageBackground>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ImageBackground>
+        </View>
+      </Modal>
 
       <View
         style={{
@@ -586,5 +785,44 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     resizeMode: "contain",
+  },
+
+  questionMark: {
+    alignSelf: "center",
+    marginTop: 20,
+  },
+  modalBg: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,.9)",
+    padding: 20,
+  },
+  numPadModalView: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 380,
+    height: "100%",
+    width: "100%",
+  },
+  numPadBtnCont: {
+    width: 72,
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  numPadBtn: {
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numPadBtnText: {
+    fontFamily: "Rubik-ExtraBold",
+    color: "#ffffff",
+    fontSize: 32,
+    lineHeight: 38,
   },
 });

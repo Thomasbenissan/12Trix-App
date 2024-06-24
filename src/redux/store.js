@@ -7,6 +7,7 @@ import userReducer from "./reducers";
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
+  whitelist: ["userReducer"],
 };
 
 const rootReducer = combineReducers({

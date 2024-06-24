@@ -16,7 +16,7 @@ import { HomeHeader } from "../components/Headers";
 import { BottomTabs } from "../components/BottomTabs";
 import PinkPlateMenu from "./PinkPlateMenu";
 import { auth, database, db } from "../components/firebase";
-import { get, push, ref } from "firebase/database";
+import { get, push, ref, set } from "firebase/database";
 import { doc } from "firebase/firestore";
 import { useSelector } from "react-redux";
 
@@ -24,6 +24,7 @@ const FriendListScreen = ({ navigation }) => {
   const { plateOne, plateTwo, plateThree, plateFour, plateFive } = useSelector(
     (state) => state.userReducer
   );
+
   const [isConstruct, setIsConstruct] = useState(false);
   const [operation, setOperation] = useState("");
   const translation = useRef(new Animated.Value(0)).current;
@@ -103,26 +104,32 @@ const FriendListScreen = ({ navigation }) => {
   };
 
   const handleShare = async () => {
-    const MessageData = {
-      plateOne,
-      plateTwo,
-      plateThree,
-      plateFour,
-      plateFive,
-    };
     try {
       selectedFriend.forEach((item) => {
-        push(
-          ref(
-            database,
-            "chatRoom/" + auth?.currentUser?.uid + "/" + item + "/messages"
-          ),
-          MessageData
+        // Create a new message reference and get its ID
+        const newMessageRef = push(
+          ref(database, `chatRoom/${auth?.currentUser?.uid}/${item}/messages`)
         );
-        push(
+        const messageId = newMessageRef.key;
+
+        // Include messageId in the MessageData
+        const MessageData = {
+          messageId,
+          plateOne,
+          plateTwo,
+          plateThree,
+          plateFour,
+          plateFive,
+          isCorrect: "",
+          senderId: auth?.currentUser?.uid,
+        };
+
+        // Use the same ID to push the message data to both paths
+        set(newMessageRef, MessageData);
+        set(
           ref(
             database,
-            "chatRoom/" + item + "/" + auth?.currentUser?.uid + "/messages"
+            `chatRoom/${item}/${auth?.currentUser?.uid}/messages/${messageId}`
           ),
           MessageData
         );
@@ -130,8 +137,40 @@ const FriendListScreen = ({ navigation }) => {
     } catch (error) {
       console.log(error);
     }
-    // return;
   };
+
+  // const handleShare = async () => {
+  //   const MessageData = {
+  //     plateOne,
+  //     plateTwo,
+  //     plateThree,
+  //     plateFour,
+  //     plateFive,
+  //     isCorrect: "",
+  //   };
+
+  //   try {
+  //     selectedFriend.forEach((item) => {
+  //       push(
+  //         ref(
+  //           database,
+  //           "chatRoom/" + auth?.currentUser?.uid + "/" + item + "/messages"
+  //         ),
+  //         MessageData
+  //       );
+  //       push(
+  //         ref(
+  //           database,
+  //           "chatRoom/" + item + "/" + auth?.currentUser?.uid + "/messages"
+  //         ),
+  //         MessageData
+  //       );
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  //   // return;
+  // };
   return (
     <LinearGradient colors={["#011E57", "#001744"]} style={styles.container}>
       <View style={styles.bgRobot}>
@@ -210,7 +249,7 @@ const FriendListScreen = ({ navigation }) => {
                             </TouchableOpacity>
                             {/* <View style={styles.boxBtn} /> */}
                             <Text style={styles.friendListText}>
-                              {item?.nickname.split("_")[0]}
+                              {item?.nickname?.split("_")[0]}
                             </Text>
 
                             {item?.iconList != undefined &&
@@ -225,27 +264,6 @@ const FriendListScreen = ({ navigation }) => {
                                     />
                                   );
                                 })}
-
-                            {/* <Image
-                        source={require("../../assets/banana.png")}
-                        style={styles.innerIcon}
-                      />
-                      <Image
-                        source={require("../../assets/strawberry.png")}
-                        style={styles.innerIcon}
-                      />
-                      <Image
-                        source={require("../../assets/duck.png")}
-                        style={styles.innerIcon}
-                      />
-                      <Image
-                        source={require("../../assets/fish.png")}
-                        style={styles.innerIcon}
-                      />
-                      <Image
-                        source={require("../../assets/ananas.png")}
-                        style={styles.innerIcon}
-                      /> */}
                           </LinearGradient>
                         </TouchableOpacity>
                       );
@@ -261,10 +279,28 @@ const FriendListScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={styles.shareBtnWrap}
                 onPress={onTranslate}
+                disabled={
+                  selectedFriend.length > 0 &&
+                  plateOne != null &&
+                  plateTwo != null &&
+                  plateThree != null &&
+                  plateFour != null &&
+                  plateFive != null
+                    ? false
+                    : true
+                }
               >
                 <LinearGradient
-                  //   colors={["#cecdcd", "#a7a6a6", "#a5a4a4", "#a8a6a6"]}
-                  colors={["#fedaec", "#fb61ae", "#e74194", "#fb61ae"]}
+                  colors={
+                    selectedFriend.length > 0 &&
+                    plateOne != null &&
+                    plateTwo != null &&
+                    plateThree != null &&
+                    plateFour != null &&
+                    plateFive != null
+                      ? ["#fedaec", "#fb61ae", "#e74194", "#fb61ae"]
+                      : ["#cecdcd", "#a7a6a6", "#a5a4a4", "#a8a6a6"]
+                  }
                   locations={[0, 0.297, 0.523, 1]}
                   style={styles.shareBtn}
                 >
