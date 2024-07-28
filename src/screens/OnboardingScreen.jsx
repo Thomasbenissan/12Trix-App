@@ -152,7 +152,7 @@ const OnboardingScreen = ({ navigation }) => {
         >
           <View style={{ position: "relative", width: 245, height: 612 }}>
             <TouchableOpacity
-              onPress={() => navigation.push("UserSignIn")}
+              onPress={() => navigation.push("SignIn")}
               style={{
                 position: "absolute",
                 width: 245,

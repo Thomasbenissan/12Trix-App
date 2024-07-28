@@ -154,7 +154,15 @@ const ProblemScreen = ({ navigation, route }) => {
       toValue: 100,
       duration: 2000,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      navigation.navigate("SendProblem", {
+        plateOne,
+        plateTwo,
+        plateThree,
+        plateFour,
+        plateFive,
+      });
+    });
   };
   const stopResultTransition = () => {
     result.stopAnimation();
@@ -368,7 +376,7 @@ const ProblemScreen = ({ navigation, route }) => {
           source={require("../../assets/robot-3.png")}
         />
       </View>
-
+  
       <View style={styles.plate}>
         <ImageBackground
           source={require("../../assets/plate2.png")}
@@ -381,7 +389,7 @@ const ProblemScreen = ({ navigation, route }) => {
           }}
         >
           <Text style={styles.plateTitle}>Problem construction</Text>
-
+  
           <View style={{ flex: 1 }}>
             <View style={[styles.plateRow]}>
               {plateOne && (
@@ -399,7 +407,7 @@ const ProblemScreen = ({ navigation, route }) => {
                   </Text>
                 </>
               )}
-
+  
               {plateOne && plateTwo && (
                 <Image
                   source={numberImageMap[plateTwo]}
@@ -411,7 +419,7 @@ const ProblemScreen = ({ navigation, route }) => {
                   }}
                 />
               )}
-
+  
               {plateOne && plateTwo && plateThree && (
                 <Image
                   source={yellowPlateImageMap[plateThree]}
@@ -424,7 +432,7 @@ const ProblemScreen = ({ navigation, route }) => {
                 />
               )}
             </View>
-
+  
             <View
               style={[
                 styles.plateRow,
@@ -474,7 +482,7 @@ const ProblemScreen = ({ navigation, route }) => {
                 </>
               )}
             </View>
-
+  
             {plateOne && plateTwo && plateThree && plateFour && plateFive && (
               <View
                 style={{
@@ -491,7 +499,7 @@ const ProblemScreen = ({ navigation, route }) => {
           </View>
         </ImageBackground>
       </View>
-
+  
       {!isResultChecked && (
         <>
           {buttons.map((button, index) => (
@@ -507,7 +515,7 @@ const ProblemScreen = ({ navigation, route }) => {
           ))}
         </>
       )}
-
+  
       {!isResultChecked ? (
         <>
           <View
@@ -530,7 +538,7 @@ const ProblemScreen = ({ navigation, route }) => {
               />
             </TouchableOpacity>
           </View>
-
+  
           <Animated.View
             style={[
               styles.coloredBtnCont,
@@ -569,7 +577,7 @@ const ProblemScreen = ({ navigation, route }) => {
               />
             </TouchableOpacity>
           </Animated.View>
-
+  
           <Modal
             animationType="slide"
             transparent={true}
@@ -625,7 +633,7 @@ const ProblemScreen = ({ navigation, route }) => {
               </ImageBackground>
             </View>
           </Modal>
-
+  
           <View
             style={[
               styles.coloredBtnCont,
@@ -681,7 +689,15 @@ const ProblemScreen = ({ navigation, route }) => {
         >
           <TouchableOpacity
             style={{ width: 42, height: 42 }}
-            onPress={() => {}}
+            onPress={() => {
+              navigation.navigate("SendProblem", {
+                plateOne,
+                plateTwo,
+                plateThree,
+                plateFour,
+                plateFive,
+              });
+            }}
           >
             <ImageBackground
               source={require("../../assets/right-btn.png")}
@@ -731,7 +747,15 @@ const ProblemScreen = ({ navigation, route }) => {
         >
           <TouchableOpacity
             style={{ width: 42, height: 42 }}
-            onPress={() => {}}
+            onPress={() => {
+              navigation.navigate("SendProblem", {
+                plateOne,
+                plateTwo,
+                plateThree,
+                plateFour,
+                plateFive,
+              });
+            }}
           >
             <ImageBackground
               source={require("../../assets/wrong-btn.png")}
@@ -748,7 +772,7 @@ const ProblemScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </Animated.View>
       )}
-
+  
       <View
         style={{
           position: "absolute",
@@ -761,7 +785,7 @@ const ProblemScreen = ({ navigation, route }) => {
       >
         <HomeHeader />
       </View>
-
+  
       <View
         style={{
           position: "absolute",
@@ -775,7 +799,7 @@ const ProblemScreen = ({ navigation, route }) => {
       >
         <BottomTabs navigation={navigation} />
       </View>
-
+  
       <Animated.View
         style={{
           transform: [
@@ -797,7 +821,7 @@ const ProblemScreen = ({ navigation, route }) => {
         </Pressable>
       </Animated.View>
     </LinearGradient>
-  );
+  );  
 };
 
 export default ProblemScreen;
